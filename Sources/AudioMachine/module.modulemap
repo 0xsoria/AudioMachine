@@ -1,0 +1,10 @@
+
+module AudioKitPM {
+    header "../../include/AudioKitAudioPlayer.h"
+    header "../../include/AudioKitMetadata.h"
+    header "../../include/AudioKitToneGenerator.h"
+    link "AudioKitAudioPlayer"
+    link "AudioKitMetadata"
+    link "AudioKitToneGenerator"
+    export *
+}
