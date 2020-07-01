@@ -6,9 +6,9 @@
 //  Copyright © 2020 Gabriel Sória Souza. All rights reserved.
 //
 
-#import "AudioKitAudioPlayer.h"
+#import "AMAudioPlayer.h"
 
-@interface AudioKitAudioPlayer()
+@interface AMAudioPlayer()
 
 @property BOOL needsSchedule;
 @property (nonatomic) AVAudioFramePosition currentPosition;
@@ -21,7 +21,7 @@
 
 @end
 
-@implementation AudioKitAudioPlayer
+@implementation AMAudioPlayer
 
 @synthesize file = _file;
 
@@ -185,7 +185,7 @@
 }
 
 - (void)scheduleAudioFile {
-    __weak AudioKitAudioPlayer *weakSelf = self;
+    __weak AMAudioPlayer *weakSelf = self;
     [self.player scheduleFile:self.file atTime:nil completionHandler:^{
         weakSelf.needsSchedule = YES;
     }];
@@ -251,7 +251,7 @@
         unsigned int samples = (unsigned int)self.audioLengthSamples;
         unsigned int seek = (unsigned int)self.seekFrame;
         
-        __weak AudioKitAudioPlayer *weakSelf = self;
+        __weak AMAudioPlayer *weakSelf = self;
         [self.player scheduleSegment:self.file startingFrame:(self.seekFrame) frameCount:((AVAudioFrameCount)samples - seek) atTime:nil completionHandler:^{
             weakSelf.needsSchedule = YES;
         }];

@@ -1,10 +1,10 @@
 
-module AudioKitPM {
-    header "../../include/AudioKitAudioPlayer.h"
-    header "../../include/AudioKitMetadata.h"
-    header "../../include/AudioKitToneGenerator.h"
-    link "AudioKitAudioPlayer"
-    link "AudioKitMetadata"
-    link "AudioKitToneGenerator"
+module AudioMachine {
+    header "../../include/AMAudioPlayer.h"
+    header "../../include/AMMetadata.h"
+    header "../../include/AMToneGenerator.h"
+    link "AMAudioPlayer"
+    link "AMMetadata"
+    link "AMToneGenerator"
     export *
 }

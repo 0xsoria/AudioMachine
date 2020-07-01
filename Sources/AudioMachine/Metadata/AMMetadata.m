@@ -5,9 +5,9 @@
 //  Created by Gabriel Soria Souza on 23/06/20.
 //
 
-#import "AudioKitMetadata.h"
+#import "AMMetadata.h"
 
-@implementation AudioKitMetadata
+@implementation AMMetadata
 
 - (NSDictionary *)getFileMetadataAtURLString:(NSString *)urlString {
     NSURL *url = [NSURL URLWithString:urlString];

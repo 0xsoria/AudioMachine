@@ -6,9 +6,9 @@
 //  Copyright © 2020 Gabriel Sória Souza. All rights reserved.
 //
 
-#import "AudioKitToneGenerator.h"
+#import "AMToneGenerator.h"
 
-@interface AudioKitToneGenerator ()
+@interface AMToneGenerator ()
 
 @property OSStatus audioErr;
 @property AudioFileID audioFile;
@@ -17,7 +17,7 @@
 
 @end
 
-@implementation AudioKitToneGenerator
+@implementation AMToneGenerator
 
 - (NSString *)defineFileNameWithWaveFormat:(WaveFormat)waveFormat {
     switch (waveFormat) {

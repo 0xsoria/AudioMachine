@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@protocol AudioKitAudioPlayerDelegate <NSObject>
+@protocol AMAudioPlayerDelegate <NSObject>
 
 - (void)progressUpdateWithCurrentPosition:(float)currentPosition;
 - (void)countdownUpWithTime:(NSString *)time;
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface AudioKitAudioPlayer : NSObject <AVAudioPlayerDelegate>
+@interface AMAudioPlayer : NSObject <AVAudioPlayerDelegate>
 
 @property AVAudioPlayerNode *player;
 @property AVAudioEngine *engine;
@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property NSURL *fileURL;
 @property AVAudioFramePosition audioLengthSamples;
 @property float audioLenghtSeconds;
-@property (weak) id <AudioKitAudioPlayerDelegate> delegate;
+@property (weak) id <AMAudioPlayerDelegate> delegate;
 
 - (instancetype)initWithAudioFileURL:(NSURL *)url;
 

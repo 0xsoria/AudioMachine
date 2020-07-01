@@ -38,7 +38,7 @@ typedef NS_ENUM(NSInteger, WaveFormat) {
     SineWave
 };
 
-@interface AudioKitToneGenerator : NSObject
+@interface AMToneGenerator : NSObject
 
 - (void)toneGeneratorWithDuration:(NSNumber *)duration sampleRate:(NSNumber *)sampleRate frequency:(NSNumber *)frequency waveFormat:(WaveFormat)waveFormat andFileFormat:(AudioFileFormat)fileFormat;
 
