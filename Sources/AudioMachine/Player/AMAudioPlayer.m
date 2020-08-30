@@ -11,11 +11,11 @@
 @interface AMAudioPlayer()
 
 @property BOOL needsSchedule;
-@property (nonatomic) AVAudioFramePosition currentPosition;
-@property AVAudioFramePosition currentFrame;
-@property AVAudioFramePosition seekFrame;
+@property float currentFrame;
+@property float seekFrame;
 @property float audioSampleRate;
 @property float minDB;
+@property (nonatomic) float currentPosition;
 
 - (void)scheduleAudioFile;
 
@@ -42,7 +42,11 @@
 - (instancetype)initWithAudioFileURL:(NSURL *)url {
     self = [super init];
     if (self == [super init]) {
-        self.currentPosition = 0;
+        self.updater = [CADisplayLink displayLinkWithTarget:self selector:@selector(progressUpdate)];
+        [self.updater addToRunLoop:NSRunLoop.currentRunLoop forMode:NSDefaultRunLoopMode];
+        [self.updater setPaused:YES];
+        float position = 0.0;
+        self.currentPosition = position;
         self.audioSampleRate = 0;
         self.seekFrame = 0;
         self.minDB = -80.0;
@@ -64,6 +68,7 @@
     [self.delegate countdownTimeWithTime:[self formattedTimeWithTime:self.audioLenghtSeconds - time]];
     
     if (self.currentPosition >= self.audioLengthSamples) {
+        [self.updater setPaused:YES];
         [self.player stop];
         [self.delegate setUpdaterToPaused:YES];
         //[self disconnectVolumeTap];
@@ -163,17 +168,18 @@
 }
 
 - (void)setPlayOrPause {
-    float position = [[NSNumber numberWithInt:(int)self.currentPosition] floatValue];
     
-    if ( position >= self.audioLengthSamples) {
+    if (self.currentPosition >= self.audioLengthSamples) {
         [self progressUpdate];
     }
     
     if (self.player.isPlaying) {
         //[self disconnectVolumeTap];
+        [self.updater setPaused:YES];
         [self.delegate setUpdaterToPaused:YES];
         [self.player pause];
     } else {
+        [self.updater setPaused:NO];
         [self.delegate setUpdaterToPaused:NO];
         //[self connectVolumeTap];
         if (self.needsSchedule) {
@@ -192,29 +198,31 @@
 }
 
 - (void)audioFileSetup:(NSURL *)url {
-    NSError *engineError;
-    NSError *fileError;
-    
-    [self setFileURL:url];
-    
-    self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
-    self.player = [[AVAudioPlayerNode alloc] init];
-    self.engine = [[AVAudioEngine alloc] init];
-    self.speedControl = [[AVAudioUnitVarispeed alloc]init];
-    self.pitchControl = [[AVAudioUnitTimePitch alloc]init];
-    
-    [self.engine attachNode:self.player];
-    [self.engine attachNode:self.speedControl];
-    [self.engine attachNode:self.pitchControl];
-    
-    //arrange the parts so that output from one is input to another
-    [self.engine connect:self.player to:self.speedControl format:self.file.processingFormat];
-    [self.engine connect:self.speedControl to:self.pitchControl format:self.file.processingFormat];
-    [self.engine connect:self.pitchControl to:self.engine.mainMixerNode format:self.file.processingFormat];
-    [self.engine prepare];
-    [self.engine startAndReturnError:&engineError];
-    
-    [self setupAudioFileInformation];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        NSError *engineError;
+        NSError *fileError;
+        
+        [self setFileURL:url];
+        
+        self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
+        self.player = [[AVAudioPlayerNode alloc] init];
+        self.engine = [[AVAudioEngine alloc] init];
+        self.speedControl = [[AVAudioUnitVarispeed alloc]init];
+        self.pitchControl = [[AVAudioUnitTimePitch alloc]init];
+        
+        [self.engine attachNode:self.player];
+        [self.engine attachNode:self.speedControl];
+        [self.engine attachNode:self.pitchControl];
+        
+        //arrange the parts so that output from one is input to another
+        [self.engine connect:self.player to:self.speedControl format:self.file.processingFormat];
+        [self.engine connect:self.speedControl to:self.pitchControl format:self.file.processingFormat];
+        [self.engine connect:self.pitchControl to:self.engine.mainMixerNode format:self.file.processingFormat];
+        [self.engine prepare];
+        [self.engine startAndReturnError:&engineError];
+        
+        [self setupAudioFileInformation];
+    });
 }
 
 - (void)setupAudioFileInformation {
@@ -234,7 +242,7 @@
 }
 
 - (void)seek:(float)time {
-    self.seekFrame = self.currentPosition + (AVAudioFramePosition)time * self.audioSampleRate;
+    self.seekFrame = self.currentPosition + time * self.audioSampleRate;
     self.seekFrame = MAX(self.seekFrame, 0);
     self.seekFrame = MIN(self.seekFrame, self.audioLengthSamples);
     self.currentPosition = self.seekFrame;
@@ -244,7 +252,7 @@
     if (self.currentPosition < self.audioLengthSamples) {
         [self progressUpdate];
         
-        float position = self.currentPosition;
+        float position =  self.currentPosition;
         [self.delegate progressUpdateWithCurrentPosition:position];
         self.needsSchedule = NO;
         
@@ -256,7 +264,7 @@
             weakSelf.needsSchedule = YES;
         }];
         [self.delegate setUpdaterToPaused:NO];
-        if (!self.player.isPlaying) {
+        if (!self.updater.isPaused) {
             [self.player play];
         }
     }

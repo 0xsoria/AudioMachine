@@ -25,17 +25,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AMAudioPlayer : NSObject <AVAudioPlayerDelegate>
 
-@property AVAudioPlayerNode *player;
-@property AVAudioEngine *engine;
-@property AVAudioUnitVarispeed *speedControl;
-@property AVAudioUnitTimePitch *pitchControl;
-@property AVAudioSession *audioSession;
+@property (strong, atomic, readwrite) AVAudioPlayerNode *player;
+@property (strong, atomic, readwrite) AVAudioEngine *engine;
+@property (strong, atomic, readwrite) AVAudioUnitVarispeed *speedControl;
+@property (strong, atomic, readwrite) AVAudioUnitTimePitch *pitchControl;
+@property (strong, atomic, readwrite) AVAudioSession *audioSession;
 @property (nonatomic) AVAudioFile *file;
-@property AVAudioFormat *format;
-@property NSURL *fileURL;
-@property AVAudioFramePosition audioLengthSamples;
+@property (strong, atomic, readwrite) AVAudioFormat *format;
+@property (strong, atomic, readwrite) NSURL *fileURL;
+@property (readwrite) AVAudioFramePosition audioLengthSamples;
 @property float audioLenghtSeconds;
 @property (weak) id <AMAudioPlayerDelegate> delegate;
+@property (strong, atomic, readwrite) CADisplayLink *updater;
 
 - (instancetype)initWithAudioFileURL:(NSURL *)url;
 
@@ -43,6 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setPlayOrPause;
 - (void)progressUpdate;
 - (void)seek:(float)time;
+- (void)audioFileSetup:(NSURL *)url;
 
 @end
 
