@@ -10,11 +10,11 @@
 
 @interface AMAudioPlayer()
 
-@property BOOL needsSchedule;
-@property float currentFrame;
-@property float seekFrame;
-@property float audioSampleRate;
-@property float minDB;
+@property (atomic, readwrite) BOOL needsSchedule;
+@property (atomic, readwrite) float currentFrame;
+@property (atomic, readwrite) float seekFrame;
+@property (atomic, readwrite) float audioSampleRate;
+@property (atomic, readwrite) float minDB;
 @property (nonatomic) float currentPosition;
 
 - (void)scheduleAudioFile;
@@ -24,6 +24,13 @@
 @implementation AMAudioPlayer
 
 @synthesize file = _file;
+@synthesize rateEffect = _rateEffect;
+@synthesize rateValue = _rateValue;
+
+- (void)setRateValue:(float)rateValue {
+    self.rateEffect.rate = rateValue;
+    _rateValue = rateValue;
+}
 
 - (void)setFile:(AVAudioFile *)file {
     _file = file;
@@ -42,6 +49,10 @@
 - (instancetype)initWithAudioFileURL:(NSURL *)url {
     self = [super init];
     if (self == [super init]) {
+        self.rateSliderValues = @[@0.5, @1.0, @1.25, @1.5, @1.75, @2.0, @2.5, @3.0];
+        self.rateValue = 1.0;
+        self.rateEffect = [[AVAudioUnitTimePitch alloc] init];
+        self.rateEffect.rate = self.rateValue;
         self.updater = [CADisplayLink displayLinkWithTarget:self selector:@selector(progressUpdate)];
         [self.updater addToRunLoop:NSRunLoop.currentRunLoop forMode:NSDefaultRunLoopMode];
         [self.updater setPaused:YES];
@@ -54,6 +65,39 @@
         [self audioFileSetup:url];
     }
     return self;
+}
+
+- (BOOL)isPlaying {
+    return self.player.isPlaying;
+}
+
+- (void)audioFileSetup:(NSURL *)url {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        NSError *engineError;
+        NSError *fileError;
+        
+        [self setFileURL:url];
+        
+        self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
+        self.player = [[AVAudioPlayerNode alloc] init];
+        self.engine = [[AVAudioEngine alloc] init];
+        self.rateEffect = [[AVAudioUnitTimePitch alloc]init];
+        
+        [self.engine attachNode:self.player];
+        [self.engine attachNode:self.rateEffect];
+        
+        //arrange the parts so that output from one is input to another
+        [self.engine connect:self.player to:self.rateEffect format:self.file.processingFormat];
+        [self.engine connect:self.rateEffect to:self.engine.mainMixerNode format:self.file.processingFormat];
+        [self.engine prepare];
+        [self.engine startAndReturnError:&engineError];
+        
+        [self setupAudioFileInformation];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self progressUpdate];
+        });
+   });
 }
 
 - (void)progressUpdate {
@@ -154,15 +198,15 @@
         secs -= mins * seconcsPerHour;
     }
     
-    NSString *formattedString = [NSString new];
+    NSMutableString *formattedString = [NSMutableString stringWithString:@""];
     if (hours > 0) {
-        formattedString = [NSString stringWithFormat:@"%02d", hours];
+        formattedString = [NSMutableString stringWithFormat:@"%02d", hours];
     }
     NSString *returnMinutes = [NSString stringWithFormat:@"%02d", mins];
-    NSString *returnSeconds = [NSString stringWithFormat:@": %02d", secs];
+    NSString *returnSeconds = [NSString stringWithFormat:@":%02d", secs];
     
-    [formattedString stringByAppendingString:returnMinutes];
-    [formattedString stringByAppendingString:returnSeconds];
+    [formattedString appendString:returnMinutes];
+    [formattedString appendString:returnSeconds];
     
     return formattedString;
 }
@@ -176,11 +220,9 @@
     if (self.player.isPlaying) {
         //[self disconnectVolumeTap];
         [self.updater setPaused:YES];
-        [self.delegate setUpdaterToPaused:YES];
         [self.player pause];
     } else {
         [self.updater setPaused:NO];
-        [self.delegate setUpdaterToPaused:NO];
         //[self connectVolumeTap];
         if (self.needsSchedule) {
             [self setNeedsSchedule:NO];
@@ -197,48 +239,28 @@
     }];
 }
 
-- (void)audioFileSetup:(NSURL *)url {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-        NSError *engineError;
-        NSError *fileError;
-        
-        [self setFileURL:url];
-        
-        self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
-        self.player = [[AVAudioPlayerNode alloc] init];
-        self.engine = [[AVAudioEngine alloc] init];
-        self.speedControl = [[AVAudioUnitVarispeed alloc]init];
-        self.pitchControl = [[AVAudioUnitTimePitch alloc]init];
-        
-        [self.engine attachNode:self.player];
-        [self.engine attachNode:self.speedControl];
-        [self.engine attachNode:self.pitchControl];
-        
-        //arrange the parts so that output from one is input to another
-        [self.engine connect:self.player to:self.speedControl format:self.file.processingFormat];
-        [self.engine connect:self.speedControl to:self.pitchControl format:self.file.processingFormat];
-        [self.engine connect:self.pitchControl to:self.engine.mainMixerNode format:self.file.processingFormat];
-        [self.engine prepare];
-        [self.engine startAndReturnError:&engineError];
-        
-        [self setupAudioFileInformation];
-    });
-}
 
 - (void)setupAudioFileInformation {
     self.audioLengthSamples = self.file.length;
     float sampleFloat = self.audioLengthSamples;
     double sampleRate = self.file.processingFormat.sampleRate;
     self.audioLenghtSeconds = sampleFloat / sampleRate;
-    
 }
 
 - (void)stopPlayingAudio {
+    [self.updater setPaused:YES];
+    
+    [self setCurrentPosition:0.0];
+    [self setSeekFrame:0.0];
+    
+    float time = self.currentPosition / self.audioSampleRate;
+    [self.delegate progressUpdateWithCurrentPosition:0.0];
+    [self.delegate countdownUpWithTime: [self formattedTimeWithTime:time]];
+    
     [self.player stop];
-}
-
-- (BOOL)isPlaying {
-    return self.player.isPlaying;
+    
+    [self setNeedsSchedule:NO];
+    [self scheduleAudioFile];
 }
 
 - (void)seek:(float)time {
@@ -263,7 +285,6 @@
         [self.player scheduleSegment:self.file startingFrame:(self.seekFrame) frameCount:((AVAudioFrameCount)samples - seek) atTime:nil completionHandler:^{
             weakSelf.needsSchedule = YES;
         }];
-        [self.delegate setUpdaterToPaused:NO];
         if (!self.updater.isPaused) {
             [self.player play];
         }
