@@ -75,8 +75,25 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         NSError *engineError;
         NSError *fileError;
+        NSError *audioSessionCategoryError;
+        NSError *outputError;
+        NSError *activationError;
+        NSError *categoryError;
         
         [self setFileURL:url];
+        
+        self.audioSession = [AVAudioSession sharedInstance];
+        [self.audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&outputError];
+        if (@available(iOS 11.0, *)) {
+            [self.audioSession setCategory:AVAudioSessionCategoryPlayback
+                                      mode:AVAudioSessionModeDefault
+                        routeSharingPolicy:(AVAudioSessionRouteSharingPolicyLongForm)
+                                   options:AVAudioSessionCategoryOptionAllowAirPlay
+                                     error:&categoryError];
+        } else {
+            [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&audioSessionCategoryError];
+        }
+        [self.audioSession setActive:YES error:&activationError];
         
         self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
         self.player = [[AVAudioPlayerNode alloc] init];
@@ -98,6 +115,18 @@
             [self progressUpdate];
         });
    });
+}
+
+- (void)updaterPauseToggle {
+    if (self.updater.isPaused) {
+        if (!self.player.isPlaying) {
+            [self.updater setPaused:YES];
+        } else {
+            [self.updater setPaused:NO];
+        }
+    } else if (!self.updater.isPaused) {
+        [self.updater setPaused:YES];
+    }
 }
 
 - (void)progressUpdate {

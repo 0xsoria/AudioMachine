@@ -47,6 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)seek:(float)time;
 - (void)audioFileSetup:(NSURL *)url;
 - (BOOL)isPlaying;
+- (void)updaterPauseToggle;
 
 @end
 
