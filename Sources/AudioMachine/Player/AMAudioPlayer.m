@@ -7,6 +7,7 @@
 //
 
 #import "AMAudioPlayer.h"
+#import "AMMetadata.h"
 
 @interface AMAudioPlayer()
 
@@ -26,6 +27,11 @@
 @synthesize file = _file;
 @synthesize rateEffect = _rateEffect;
 @synthesize rateValue = _rateValue;
+
+- (NSDictionary *)getMetadata {
+    AMMetadata *metadata = [[AMMetadata alloc] init];
+    return [metadata getFileMetadataAtURLString:self.fileURL];
+}
 
 - (void)setRateValue:(float)rateValue {
     self.rateEffect.rate = rateValue;

@@ -48,6 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)audioFileSetup:(NSURL *)url;
 - (BOOL)isPlaying;
 - (void)updaterPauseToggle;
+- (NSDictionary *)getMetadata;
 
 @end
 

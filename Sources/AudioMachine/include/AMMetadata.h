@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AMMetadata : NSObject
 
-- (NSDictionary *)getFileMetadataAtURLString:(NSString *)urlString;
+- (NSDictionary *)getFileMetadataAtURLString:(NSURL *)url;
 
 @end
 

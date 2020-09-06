@@ -9,9 +9,7 @@
 
 @implementation AMMetadata
 
-- (NSDictionary *)getFileMetadataAtURLString:(NSString *)urlString {
-    NSURL *url = [NSURL URLWithString:urlString];
-    
+- (NSDictionary *)getFileMetadataAtURLString:(NSURL *)url {
     AudioFileID audioFile;
     OSStatus theErr = noErr;
     theErr = AudioFileOpenURL((__bridge CFURLRef)url, kAudioFileReadPermission, 0, &audioFile);
