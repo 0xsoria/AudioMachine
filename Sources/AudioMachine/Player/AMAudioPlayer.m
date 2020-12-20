@@ -38,10 +38,10 @@
     _rateValue = rateValue;
 }
 
-- (void)setFile:(AVAudioFile *)file {
-    _file = file;
-    self.audioLengthSamples = file.length;
-    self.format = file.processingFormat;
+- (void)setFile:(AVAudioFile *)newFile {
+    _file = newFile;
+    self.audioLengthSamples = newFile.length;
+    self.format = newFile.processingFormat;
     self.audioSampleRate = self.format.sampleRate;
     self.audioLenghtSeconds = self.audioLengthSamples / self.audioSampleRate;
 }
@@ -87,6 +87,8 @@
         NSError *categoryError;
         
         [self setFileURL:url];
+        AVAudioFile *localFile = [[AVAudioFile alloc] initForReading:url error:&fileError];
+        self.file = localFile;
         
         self.audioSession = [AVAudioSession sharedInstance];
         [self.audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&outputError];
@@ -100,8 +102,6 @@
             [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&audioSessionCategoryError];
         }
         [self.audioSession setActive:YES error:&activationError];
-        
-        self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
         self.player = [[AVAudioPlayerNode alloc] init];
         self.engine = [[AVAudioEngine alloc] init];
         self.rateEffect = [[AVAudioUnitTimePitch alloc]init];
