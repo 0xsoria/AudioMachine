@@ -87,8 +87,6 @@
         NSError *categoryError;
         
         [self setFileURL:url];
-        AVAudioFile *localFile = [[AVAudioFile alloc] initForReading:url error:&fileError];
-        self.file = localFile;
         
         self.audioSession = [AVAudioSession sharedInstance];
         [self.audioSession overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:&outputError];
@@ -102,6 +100,7 @@
             [self.audioSession setCategory:AVAudioSessionCategoryPlayback error:&audioSessionCategoryError];
         }
         [self.audioSession setActive:YES error:&activationError];
+        self.file = [[AVAudioFile alloc] initForReading:self.fileURL error:&fileError];
         self.player = [[AVAudioPlayerNode alloc] init];
         self.engine = [[AVAudioEngine alloc] init];
         self.rateEffect = [[AVAudioUnitTimePitch alloc]init];
